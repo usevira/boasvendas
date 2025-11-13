@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão</title>
+    <!-- Biblioteca Google Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Choices.js para Dropdowns Pesquisáveis -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <style>
+        :root { --primary: #4a69bd; --secondary: #1dd1a1; --light: #f8f9fa; --dark: #343a40; --danger: #ff6b6b; --warning: #feca57; --success: #2ecc71; --bg: #eef2f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.6; }
+        #app { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--dark); color: white; padding: 20px; flex-shrink: 0; }
+        .sidebar h1 { font-size: 1.5rem; text-align: center; margin-bottom: 30px; }
+        .nav-menu a { display: block; color: #adb5bd; padding: 12px 15px; text-decoration: none; border-radius: 6px; margin-bottom: 8px; transition: all 0.3s ease; }
+        .nav-menu a:hover, .nav-menu a.active { background-color: var(--primary); color: white; }
+        .main-content { flex-grow: 1; padding: 30px; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h2 { font-size: 2rem; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+        .btn-sm { padding: 5px 10px; font-size: 0.875rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: #3b5394; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-success { background-color: var(--secondary); color: white; }
+        .btn-success:hover { background-color: #18a689; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #e65a5a; }
+        .btn-icon { padding: 5px 10px; font-size: 1.2rem; line-height: 1; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .stat-card h4 { color: #6c757d; margin-bottom: 10px; }
+        .stat-card p { font-size: 1.8rem; font-weight: 700; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-title { font-size: 1.2rem; margin-bottom: 20px; font-weight: 600; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; font-weight: 500; }
+        .form-control { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 1rem; }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: var(--light); font-weight: 600; }
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; display: inline-block; text-transform: capitalize; }
+        .status-aguardando-produção { background-color: #fff3cd; color: #856404; }
+        .status-concluído, .status-acertado, .status-acertado-e-finalizado, .status-acertado-(aguard.-retorno), .status-parcialmente-acertado { background-color: #d4edda; color: #155724; }
+        .status-disponivel, .status-em-consignação { background-color: #d1ecf1; color: #0c5460; }
+        .status-esgotado, .status-cancelado { background-color: #f8d7da; color: #721c24; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; font-size: 1.5rem; }
+        .chart-container { width: 100%; min-height: 350px; }
+        .filter-container { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
+        .toast { background-color: #fff; color: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 10px; opacity: 0; transform: translateX(100%); transition: all 0.4s ease-in-out; }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.success { background-color: var(--success); }
+        .toast.error { background-color: var(--danger); }
+        .toast.info { background-color: var(--primary); }
+        .toast.warning { background-color: var(--warning); color: var(--dark);}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1040; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; transform: scale(0.9); transition: transform 0.3s ease; }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-title { font-size: 1.5rem; margin-bottom: 15px; }
+        .modal-body { margin-bottom: 25px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+
+        /* Estilos para formulários de massa */
+        .mass-form-container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .mass-form-item-entry .form-row { grid-template-columns: 1fr 1fr 1fr; }
+        .mass-form-item-entry .form-row-full { grid-template-columns: 2fr 1fr; }
+        .mass-item-list th:last-child, .mass-item-list td:last-child { text-align: right; }
+        .mass-item-list .btn-danger { padding: 5px 10px; }
+        
+        /* Ajustes para Choices.js */
+        .choices__inner { background-color: white; border-radius: 6px; border: 1px solid #ced4da; padding: 5px 7px; font-size: 1rem; min-height: 40px; }
+        .choices__list--dropdown { border-radius: 6px; border: 1px solid #ced4da; }
+        .choices[data-type*="select-one"]::after { border-color: #333 transparent transparent; }
+        .choices[data-type*="select-one"].is-open::after { border-color: transparent transparent #333; margin-top: -2.5px; }
+    </style>
+</head>
+<body>
+
+    <div id="loader">A carregar...</div>
+    
+    <div id="app">
+        <aside class="sidebar">
+            <h1>Gestão PRO</h1>
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-link active">📊 Dashboard</a>
+                <a href="#vendas" class="nav-link">🛒 Vendas</a>
+                <a href="#producao-massa" class="nav-link">🏭 Produção em Massa</a>
+                <a href="#saida-massa" class="nav-link">🚚 Saída em Massa</a>
+                <a href="#lancamento-consignacao" class="nav-link">📥 Lançar Acerto (V/R)</a>
+                <a href="#producao" class="nav-link">🏭 Produção (Simples)</a>
+                <a href="#estoque" class="nav-link">📦 Inventário</a>
+                <a href="#consignacao" class="nav-link">🚚 Consignação (Simples)</a>
+                <a href="#acerto-consignacao" class="nav-link">💰 Acerto Consignação</a>
+                <a href="#caixa" class="nav-link">💰 Fluxo de Caixa</a>
+                <a href="#configuracoes" class="nav-link">⚙️ Configurações</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <!-- PÁGINA DASHBOARD -->
+            <section id="dashboard" class="page active">
+                <div class="header">
+                    <h2>Dashboard</h2>
+                    <button class="btn btn-primary" onclick="loadInitialData()">Atualizar</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><h4>Faturação do Mês</h4><p id="stat-faturamento">R$ 0,00</p></div>
+                    <div class="stat-card"><h4>Itens em Inventário</h4><p id="stat-itens-estoque">0</p></div>
+                    <div class="stat-card"><h4>Valor do Inventário</h4><p id="stat-valor-estoque">R$ 0,00</p></div>
+                    <div class="stat-card"><h4>Lotes Pendentes</h4><p id="stat-lotes-pendentes">0</p></div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Análise de Vendas</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                         <div id="top-products-chart" class="chart-container"></div>
+                         <div id="sales-by-seller-chart" class="chart-container"></div>
+                    </div>
+                    <div id="sales-30-days-chart" class="chart-container" style="margin-top: 20px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Vendas Recentes</h3>
+                    <div class="table-responsive"><table id="table-vendas-recentes"><thead><tr><th>Data</th><th>Produto</th><th>Qtd</th><th>Valor</th><th>Vendedor</th></tr></thead><tbody></tbody></table></div>
+                </div>
+            </section>
+
+             <!-- PÁGINA VENDAS -->
+             <section id="vendas" class="page">
+                 <div class="header"><h2>Registar Nova Venda</h2></div>
+                 <div class="card">
+                     <form id="form-venda">
+                         <div class="form-row">
+                             <div class="form-group"><label for="venda-produto">Produto</label><select id="venda-produto" class="form-control" required></select></div>
+                             <div class="form-group"><label for="venda-quantidade">Quantidade</label><input type="number" id="venda-quantidade" class="form-control" required min="1"></div>
+                             <div class="form-group"><label for="venda-vendedor">Vendedor</label><select id="venda-vendedor" class="form-control" required></select></div>
+                         </div>
+                         <button type="submit" class="btn btn-primary">Registar Venda</button>
+                     </form>
+                 </div>
+            </section>
+            
+            <!-- PÁGINA PRODUÇÃO EM MASSA (NOVA) -->
+            <section id="producao-massa" class="page">
+                <div class="header"><h2>Criação de Lote em Massa</h2></div>
+                <form id="form-producao-massa">
+                    <div class="mass-form-container">
+                        <!-- Coluna da Esquerda: Detalhes do Lote e Formulário de Item -->
+                        <div class="card">
+                            <h3 class="card-title">1. Detalhes do Lote</h3>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="massa-lote-descricao">Descrição do Lote</label>
+                                <input type="text" id="massa-lote-descricao" class="form-control" required placeholder="Ex: Produção Revendedor X - Outubro">
+                            </div>
+                            
+                            <h3 class="card-title" style="margin-top: 25px;">2. Adicionar Item ao Lote</h3>
+                            <div class="mass-form-item-entry">
+                                <div class="form-row">
+                                    <div class="form-group"><label>Modelo</label><select id="massa-produto-modelo" class="form-control" required></select></div>
+                                    <div class="form-group"><label>Cor</label><select id="massa-produto-cor" class="form-control" required></select></div>
+                                    <div class="form-group"><label>Tamanho</label><select id="massa-produto-tamanho" class="form-control" required></select></div>
+                                </div>
+                                <div class="form-row-full" style="margin-bottom: 15px;">
+                                    <div class="form-group"><label>Estampa</label><input type="text" id="massa-produto-estampa" class="form-control" required placeholder="Ex: Jesus Is The Way"></div>
+                                    <div class="form-group"><label>Quantidade</label><input type="number" id="massa-produto-quantidade" class="form-control" required min="1" value="1"></div>
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="adicionarItemLoteMassa()">Adicionar ao Lote</button>
+                            </div>
+                        </div>
+
+                        <!-- Coluna da Direita: Lista de Itens e Finalização -->
+                        <div class="card">
+                            <h3 class="card-title">3. Itens no Lote Atual</h3>
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                <table id="table-producao-massa-itens" class="mass-item-list">
+                                    <thead><tr><th>Produto</th><th>Qtd</th><th>Ação</th></tr></thead>
+                                    <tbody>
+                                        <tr id="producao-massa-sem-itens"><td colspan="3" style="text-align: center;">Nenhum item adicionado.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top: 15px; font-weight: bold;">
+                                Total de Itens: <span id="producao-massa-total-itens">0</span>
+                            </div>
+                            
+                            <h3 class="card-title" style="margin-top: 25px;">4. Finalizar Lote</h3>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="massa-lote-solicitante">Solicitante</label>
+                                <select id="massa-lote-solicitante" class="form-control" required></select>
+                            </div>
+                            <button type="submit" class="btn btn-success">Confirmar e Criar Lote de Produção</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+            
+            <!-- PÁGINA SAÍDA EM MASSA -->
+            <section id="saida-massa" class="page">
+                <div class="header"><h2>Saída em Massa de Produtos</h2></div>
+                 <form id="form-saida-massa">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="card">
+                            <h3 class="card-title">1. Adicionar Produto ao Pedido</h3>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label for="saida-massa-produto">Produto (Estoque Pronto)</label>
+                                <!-- Select será transformado pelo Choices.js -->
+                                <select id="saida-massa-produto" class="form-control" placeholder="Digite para pesquisar..."></select> 
+                            </div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="saida-massa-quantidade">Quantidade</label>
+                                <input type="number" id="saida-massa-quantidade" class="form-control" min="1" value="1">
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="adicionarItemSaidaMassa()">Adicionar ao Pedido</button>
+                        </div>
+                        <div class="card">
+                            <h3 class="card-title">2. Itens no Pedido de Saída</h3>
+                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                <table id="table-saida-massa-itens">
+                                    <thead><tr><th>Produto</th><th>Qtd</th><th>Ação</th></tr></thead>
+                                    <tbody>
+                                        <tr id="saida-massa-sem-itens"><td colspan="3" style="text-align: center;">Nenhum item adicionado.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top: 15px; font-weight: bold;">
+                                Total de Itens: <span id="saida-massa-total-itens">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 class="card-title">3. Finalizar Saída</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="saida-massa-revendedor">Revendedor / Destino</label>
+                                <select id="saida-massa-revendedor" class="form-control" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="saida-massa-tipo">Tipo de Saída</label>
+                                <select id="saida-massa-tipo" class="form-control" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Consignação">Consignação</option>
+                                    <option value="Venda Atacado">Venda Atacado</option>
+                                    <option value="Ajuste de Estoque">Ajuste de Estoque (Baixa)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="saida-massa-observacao">Observação (Opcional)</label>
+                            <input type="text" id="saida-massa-observacao" class="form-control" placeholder="Ex: Pedido feira X, ajuste por perda...">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Confirmar Saída em Massa</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ======================================================= -->
+            <!-- PÁGINA LANÇAMENTO DE ACERTO (VENDA/RETORNO) - (NOVA)    -->
+            <!-- ======================================================= -->
+            <section id="lancamento-consignacao" class="page">
+                <div class="header"><h2>Lançar Relatório de Consignação (Venda/Retorno)</h2></div>
+                <div class="card" style="max-width: 800px;">
+                    <h3 class="card-title">Lançamento Manual de Acerto</h3>
+                    <p style="margin-bottom: 20px;">Use esta página para registar as vendas e devoluções informadas por um revendedor. Após lançar tudo, vá para a página "Acerto Consignação" para fechar o financeiro.</p>
+                    <form id="form-lancamento-consignacao">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lancamento-tipo">Tipo de Lançamento</label>
+                                <select id="lancamento-tipo" class="form-control" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Venda Consignada">Venda Consignada (O revendedor vendeu)</option>
+                                    <option value="Retorno Consignado">Retorno Consignado (O revendedor devolveu)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lancamento-revendedor">Revendedor</label>
+                                <select id="lancamento-revendedor" class="form-control" required></select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group" style="grid-column: 1 / 3;">
+                                <label for="lancamento-produto">Produto</label>
+                                <!-- Este select será populado com a lista mestre de produtos -->
+                                <select id="lancamento-produto" class="form-control" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lancamento-quantidade">Quantidade</label>
+                                <input type="number" id="lancamento-quantidade" class="form-control" required min="1" value="1">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Lançar Item</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PÁGINA PRODUÇÃO (SIMPLES) -->
+            <section id="producao" class="page">
+                <div class="header">
+                    <h2>Gestão de Produção (Simples)</h2>
+                    <button class="btn btn-secondary" onclick="imprimirLotes()">🖨️ Imprimir Todos os Lotes Pendentes</button>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Ordem de Separação de Peças Lisas (Total de Lotes Pendentes)</h3>
+                    <div class="table-responsive">
+                        <table id="table-ordem-producao">
+                            <thead><tr><th>Peça Lisa (Matéria-Prima)</th><th>Quantidade a Separar</th><th>Estampa a Produzir</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-top: 20px;">
+                    <div class="card">
+                        <h3 class="card-title">Criar Novo Lote (Simples)</h3>
+                        <form id="form-lote">
+                            <div class="form-group" style="margin-bottom: 15px;"><label for="lote-descricao">Descrição do Lote</label><input type="text" id="lote-descricao" class="form-control" required placeholder="Ex: Coleção Verão 2025"></div>
+                            <div class="form-group" style="margin-bottom: 15px;"><label for="lote-produtos-textarea">Produtos (um por linha)</label><textarea id="lote-produtos-textarea" class="form-control" rows="5" required placeholder="5 Camiseta Masculina Preta M Caveira&#10;3 Camiseta Feminina Branca P Floral"></textarea></div>
+                            <div class="form-group" style="margin-bottom: 15px;"><label for="lote-solicitante">Solicitante</label><select id="lote-solicitante" class="form-control" required></select></div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Criar Lote</button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">Fila de Lotes</h3>
+                        <div class="table-responsive"><table id="table-lotes"><thead><tr><th>ID</th><th>Descrição</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PÁGINA INVENTÁRIO -->
+            <section id="estoque" class="page">
+                <div class="header"><h2>Consulta de Inventário</h2></div>
+                
+                <div class="card">
+                    <h3 class="card-title">Adicionar Novo Produto / Dar Entrada de Inventário</h3>
+                    <form id="form-produto-pronto">
+                        <div class="form-row">
+                            <div class="form-group"><label>Modelo</label><select id="produto-modelo" class="form-control" required></select></div>
+                            <div class="form-group"><label>Cor</label><select id="produto-cor" class="form-control" required></select></div>
+                             <div class="form-group"><label>Tamanho</label><select id="produto-tamanho" class="form-control" required></select></div>
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group"><label>Estampa</label><input type="text" id="produto-estampa" class="form-control" required placeholder="Ex: Jesus Is The Way"></div>
+                            <div class="form-group"><label>Gênero (Opcional)</label><input type="text" id="produto-genero" class="form-control" placeholder="Ex: Masculino"></div>
+                            <div class="form-group"><label>Cor da Manga (Opcional)</label><input type="text" id="produto-cor-manga" class="form-control" placeholder="Ex: Preta"></div>
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group"><label>Quantidade</label><input type="number" id="produto-quantidade" class="form-control" required min="1"></div>
+                             <div class="form-group"><label>Preço de Venda (R$)</label><input type="number" id="produto-preco" class="form-control" required step="0.01" placeholder="129.99"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Adicionar ao Inventário Pronto</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Adicionar Nova Matéria-Prima (Peça Lisa)</h3>
+                    <form id="form-materia-prima">
+                        <div class="form-row">
+                            <div class="form-group"><label>Modelo</label><input type="text" id="materia-modelo" class="form-control" required placeholder="Ex: Camiseta Masculina"></div>
+                            <div class="form-group"><label>Cor</label><input type="text" id="materia-cor" class="form-control" required placeholder="Ex: Preta"></div>
+                            <div class="form-group"><label>Tamanho</label><input type="text" id="materia-tamanho" class="form-control" required placeholder="Ex: M"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Gênero (Opcional)</label><input type="text" id="materia-genero" class="form-control" placeholder="Ex: Masculino"></div>
+                            <div class="form-group"><label>Cor da Manga (Opcional)</label><input type="text" id="materia-cor-manga" class="form-control" placeholder="Ex: Branca"></div>
+                            <div class="form-group"><label>Quantidade Inicial</label><input type="number" id="materia-quantidade" class="form-control" required min="0" value="0"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Adicionar Matéria-Prima</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Inventário de Produto Pronto</h3>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <input type="text" id="filtro-estoque-pronto" class="form-control" placeholder="🔎 Pesquisar em produtos prontos...">
+                    </div>
+                    <div class="table-responsive">
+                        <table id="table-estoque-pronto">
+                            <thead>
+                                <tr>
+                                    <th>Produto Completo</th>
+                                    <th>Qtd</th>
+                                    <th>Preço</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Inventário de Matéria-Prima</h3>
+                     <div class="form-group" style="margin-bottom: 20px;">
+                        <input type="text" id="filtro-estoque-materia" class="form-control" placeholder="🔎 Pesquisar em matéria-prima...">
+                    </div>
+                    <div class="table-responsive"><table id="table-estoque-materia"><thead><tr><th>Matéria-Prima</th><th>Disponível</th><th>Reservada</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+                </div>
+            </section>
+            
+            <!-- PÁGINA CONSIGNAÇÃO (SIMPLES) -->
+            <section id="consignacao" class="page">
+                <div class="header"><h2>Gestão de Consignação (Simples)</h2></div>
+                <div class="card">
+                    <h3 class="card-title">Enviar Novos Produtos para Consignação</h3>
+                    <form id="form-enviar-consignacao">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="consignacao-revendedor">Selecione o Revendedor</label>
+                            <select id="consignacao-revendedor" class="form-control" required></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="consignacao-produtos-textarea">Produtos do Estoque Pronto (um por linha)</label>
+                            <textarea id="consignacao-produtos-textarea" class="form-control" rows="5" required placeholder="5 Camiseta Masculina Preta M Caveira&#10;3 Camiseta Feminina Branca P Floral"></textarea>
+                            <small>Informe a quantidade e o nome EXATO do produto como aparece no inventário.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Enviar para Consignação</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">Consulta de Estoque Consignado</h3>
+                    <div class="filter-container">
+                        <div class="form-group">
+                            <label for="filtro-revendedor">Filtrar por Revendedor:</label>
+                            <select id="filtro-revendedor" class="form-control">
+                                <!-- Opções preenchidas via JS -->
+                            </select>
+                        </div>
+                         <div class="form-group">
+                            <label for="filtro-data-inicio">Data Início:</label>
+                            <input type="date" id="filtro-data-inicio" class="form-control">
+                        </div>
+                         <div class="form-group">
+                            <label for="filtro-data-fim">Data Fim:</label>
+                            <input type="date" id="filtro-data-fim" class="form-control">
+                        </div>
+                        <button class="btn btn-secondary" onclick="imprimirRelatorioConsignacao()">🖨️ Imprimir Relatório</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="table-consignacao">
+                            <thead>
+                                <tr>
+                                    <th>Revendedor</th>
+                                    <th>Produto</th>
+                                    <th>Qtd. Restante</th>
+                                    <th>Qtd. Enviada</th>
+                                    <th>Qtd. Vendida</th>
+                                    <th>Status</th>
+                                    <th>Data de Envio</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+             <!-- PÁGINA ACERTO CONSIGNAÇÃO -->
+             <section id="acerto-consignacao" class="page">
+                 <div class="header"><h2>Acerto de Consignação</h2></div>
+                 <div class="card">
+                     <div class="filter-container">
+                         <div class="form-group">
+                             <label for="acerto-revendedor">Revendedor</label>
+                             <select id="acerto-revendedor" class="form-control"></select>
+                         </div>
+                         <div class="form-group">
+                             <label for="acerto-data-fim">Acertar até a data</label>
+                             <input type="date" id="acerto-data-fim" class="form-control">
+                         </div>
+                         <button class="btn btn-primary" onclick="buscarLancamentosAcerto()">Buscar Lançamentos</button>
+                     </div>
+                 </div>
+
+                 <div id="acerto-resumo-container" class="card" style="display: none;">
+                     <h3 class="card-title">Resumo do Acerto</h3>
+                     <div class="stats-grid">
+                         <div class="stat-card"><h4>Total Vendido</h4><p id="acerto-total-vendido">R$ 0,00</p></div>
+                         <div class="stat-card"><h4>Comissão</h4><p id="acerto-comissao">R$ 0,00</p></div>
+                         <div class="stat-card"><h4>Valor a Receber</h4><p id="acerto-valor-receber">R$ 0,00</p></div>
+                         <div class="stat-card"><h4>Peças Vendidas</h4><p id="acerto-pecas-vendidas">0</p></div>
+                     </div>
+                     <h4 style="margin-top: 20px; margin-bottom: 10px;">Itens Pendentes de Acerto</h4>
+                     <div class="table-responsive">
+                         <table id="table-acerto-detalhes">
+                             <thead>
+                                 <tr>
+                                     <th>Produto</th>
+                                     <th>Qtd. Vendida</th>
+                                     <th>Valor Total</th>
+                                 </tr>
+                             </thead>
+                             <tbody></tbody>
+                         </table>
+                     </div>
+                     <button class="btn btn-success" style="margin-top: 20px;" onclick="realizarAcertoConsignacao()">Confirmar Acerto e Lançar no Caixa</button>
+                 </div>
+              </section>
+            
+             <!-- PÁGINA FLUXO DE CAIXA -->
+            <section id="caixa" class="page">
+                 <div class="header"><h2>Fluxo de Caixa</h2></div>
+                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                    <div class="card">
+                        <h3 class="card-title">Novo Lançamento</h3>
+                        <form id="form-caixa">
+                            <div class="form-group"><label>Tipo</label><select id="caixa-tipo" class="form-control"><option value="Entrada">Entrada</option><option value="Saída">Saída</option></select></div>
+                            <div class="form-group"><label>Valor</label><input type="number" id="caixa-valor" class="form-control" step="0.01" required></div>
+                            <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao" class="form-control" required></div>
+                            <div class="form-group"><label>Responsável</label><select id="caixa-responsavel" class="form-control" required></select></div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Lançar</button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">Últimos Lançamentos</h3>
+                        <div class="table-responsive"><table id="table-caixa"><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                </div>
+            </section>
+
+              <!-- PÁGINA CONFIGURAÇÕES -->
+            <section id="configuracoes" class="page">
+                 <div class="header"><h2>Configurações</h2></div>
+                 <div class="card" style="max-width: 600px;">
+                    <h3 class="card-title">Adicionar Novo Vendedor / Representante</h3>
+                    <form id="form-add-revendedor">
+                        <div class="form-group">
+                            <label for="revendedor-nome">Nome do Vendedor</label>
+                            <input type="text" id="revendedor-nome" class="form-control" required placeholder="Ex: João Silva">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Adicionar Vendedor</button>
+                    </form>
+                 </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" class="modal-title"></h3>
+            <div id="modal-body" class="modal-body"></div>
+            <div class="modal-footer">
+                <button id="modal-btn-cancel" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-btn-confirm" class="btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fullData = {};
+        // Variáveis globais para os formulários de massa
+        let loteMassaItens = [];
+        let saidaMassaItens = [];
+        // Variável global para a instância do Choices.js
+        let saidaMassaChoicesInstance = null;
+        let lancamentoChoicesInstance = null; 
+
+        google.charts.load('current', {'packages':['corechart', 'bar']});
+        google.charts.setOnLoadCallback(initializeApp);
+
+        function initializeApp() {
+            setupNavigation();
+            loadInitialData();
+            setupForms();
+            setupTableFilters(); 
+            
+            document.getElementById('filtro-revendedor').addEventListener('change', () => renderConsignacaoTable());
+            document.getElementById('filtro-data-inicio').addEventListener('change', () => renderConsignacaoTable());
+            document.getElementById('filtro-data-fim').addEventListener('change', () => renderConsignacaoTable());
+
+            document.getElementById('modal-btn-cancel').addEventListener('click', () => document.getElementById('modal-confirm').classList.remove('show'));
+            document.getElementById('modal-confirm').addEventListener('click', (e) => {
+                if (e.target.id === 'modal-confirm') {
+                    document.getElementById('modal-confirm').classList.remove('show');
+                }
+            });
+
+            document.getElementById('acerto-data-fim').valueAsDate = new Date();
+        }
+
+        // --- Funções Utilitárias (Toast, Confirm, Loader, Navigation) ---
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, duration);
+        }
+
+        function showConfirm(title, message, onConfirmCallback) {
+            const modal = document.getElementById('modal-confirm');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = message;
+            const confirmBtn = document.getElementById('modal-btn-confirm');
+            const newConfirmBtn = confirmBtn.cloneNode(true); // Clona para remover listeners antigos
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            newConfirmBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+                onConfirmCallback();
+            });
+            modal.classList.add('show');
+        }
+
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+        
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            navLinks.forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const currentActiveLink = document.querySelector('.nav-link.active');
+                    const currentActivePage = document.querySelector('.page.active');
+                    if (currentActiveLink) currentActiveLink.classList.remove('active');
+                    if (currentActivePage) currentActivePage.classList.remove('active');
+                    
+                    link.classList.add('active');
+                    const targetPageId = link.getAttribute('href');
+                    const targetPage = document.querySelector(targetPageId);
+                    if (targetPage) {
+                        targetPage.classList.add('active');
+                        // Redesenha gráficos se for para o dashboard
+                        if(targetPage.id === 'dashboard' && google.visualization && google.visualization.LineChart) {
+                            try { drawAllCharts(); } catch(chartError){ console.error("Erro ao redesenhar gráficos:", chartError); }
+                        }
+                    } else {
+                        console.error(`Página não encontrada para o link: ${targetPageId}`);
+                    }
+                });
+            });
+        }
+
+        // --- Funções de Carregamento e Renderização Principal ---
+        function loadInitialData() {
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(onDataLoaded)
+                .withFailureHandler(onError)
+                .getDashboardData();
+        }
+
+        function onDataLoaded(data) {
+            try {
+                if (!data) {
+                    onError({ message: "O servidor retornou uma resposta vazia. Verifique os logs do Apps Script para erros." }); return;
+                }
+                if (data.error) {
+                    onError({ message: data.error }); return;
+                }
+                console.log("Dados recebidos:", data);
+                fullData = data; // Armazena os dados globalmente
+                renderAll(); // Chama a função principal de renderização
+                // Tenta desenhar gráficos após renderizar tudo
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                     try { drawAllCharts(); } catch(chartError){ console.error("Erro ao desenhar gráficos:", chartError); }
+                }
+            } catch (e) {
+                console.error("Erro ao renderizar dados no frontend:", e);
+                showToast("Ocorreu um erro ao exibir os dados no painel.", 'error');
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function onError(error) {
+            console.error("Erro detalhado do backend:", error);
+            let userMessage = 'Erro ao carregar dados: ' + (error.message || 'Erro desconhecido.');
+            if (error && error.message && error.message.toLowerCase().includes("exceeded maximum execution time")) {
+                userMessage = "O carregamento de dados demorou muito (timeout). Verifique os logs no Apps Script para ver qual etapa está lenta e otimize as suas folhas de cálculo.";
+            }
+            showToast(userMessage, 'error', 6000);
+            showLoader(false);
+        }
+
+        function renderAll() {
+            console.log("Iniciando renderAll...");
+            // Renderiza Estatísticas
+            const stats = fullData.stats || {};
+            document.getElementById('stat-faturamento').textContent = (stats.faturamentoMes || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-itens-estoque').textContent = stats.totalItensEstoque || 0;
+            document.getElementById('stat-valor-estoque').textContent = (stats.valorEstoque || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('stat-lotes-pendentes').textContent = stats.lotesPendentes || 0;
+            
+            // Renderiza Tabela Vendas Recentes
+            const vendasRecentesBody = document.querySelector('#table-vendas-recentes tbody');
+            if(vendasRecentesBody) vendasRecentesBody.innerHTML = (fullData.vendasRecentes || []).map(v => `
+                <tr>
+                    <td>${v.dataHora ? new Date(v.dataHora).toLocaleDateString('pt-BR') : '-'}</td><td>${v.produto || '-'}</td><td>${v.quantidade || 0}</td>
+                    <td>${(v.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td>${v.vendedor || '-'}</td>
+                </tr>`).join('') || '<tr><td colspan="5">Nenhuma venda recente.</td></tr>';
+
+            // Popula todos os selects dinâmicos
+            populateSelect('#venda-produto', fullData.produtos, 'Selecione um produto');
+            // NÃO CHAMA MAIS populateSelect para #saida-massa-produto aqui, será feito pelo Choices.js
+            populateSelect('#venda-vendedor', fullData.vendedores, 'Selecione um vendedor');
+            populateSelect('#lote-solicitante', fullData.vendedores, 'Selecione o solicitante');
+            populateSelect('#massa-lote-solicitante', fullData.vendedores, 'Selecione o solicitante');
+            populateSelect('#caixa-responsavel', fullData.vendedores, 'Selecione o responsável');
+            populateSelect('#consignacao-revendedor', fullData.revendedores, 'Selecione um revendedor'); // Usa revendedores
+            populateSelect('#acerto-revendedor', fullData.revendedores, 'Selecione um revendedor'); // Usa revendedores
+            populateSelect('#saida-massa-revendedor', fullData.revendedores, 'Selecione o revendedor/destino'); // Usa revendedores
+            populateSelect('#filtro-revendedor', fullData.revendedores, 'Todos os Revendedores', true); // Usa revendedores, permite 'todos'
+            
+            // Popula selects da página de lançamento
+            populateSelect('#lancamento-revendedor', fullData.revendedores, 'Selecione um revendedor');
+            // O select '#lancamento-produto' é populado pelo Choices.js
+
+            // Popula selects de formulários de produto/matéria-prima
+            if (fullData.formOptions) {
+                populateSelect('#produto-modelo', fullData.formOptions.modelos, 'Selecione o modelo');
+                populateSelect('#produto-cor', fullData.formOptions.cores, 'Selecione a cor');
+                populateSelect('#produto-tamanho', fullData.formOptions.tamanhos, 'Selecione o tamanho');
+                
+                populateSelect('#massa-produto-modelo', fullData.formOptions.modelos, 'Selecione o modelo');
+                populateSelect('#massa-produto-cor', fullData.formOptions.cores, 'Selecione a cor');
+                populateSelect('#massa-produto-tamanho', fullData.formOptions.tamanhos, 'Selecione o tamanho');
+            }
+
+            // Renderiza Tabela de Lotes (Simples)
+            const lotesBody = document.querySelector('#table-lotes tbody');
+            if(lotesBody) lotesBody.innerHTML = (fullData.lotes || []).map(l => {
+                const statusClass = (l.status || '').toLowerCase().replace(/[\s\(\).]/g, '-'); // Trata parênteses e pontos
+                return `
+                <tr>
+                    <td>${l.id || '-'}</td><td>${l.descricao || '-'}</td><td>${l.dataPedido ? new Date(l.dataPedido).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td><span class="status-badge status-${statusClass}">${l.status || '-'}</span></td>
+                    <td style="display: flex; gap: 5px;">
+                        ${l.status === 'Aguardando Produção' ? `
+                            <button class="btn btn-primary btn-sm" onclick="concluirLote('${l.id}')">Concluir</button>
+                            <button class="btn btn-danger btn-sm" onclick="cancelarLote('${l.id}')">Cancelar</button>
+                            <button class="btn btn-icon btn-secondary" title="Imprimir Lote" onclick="imprimirLotes('${l.id}')">🖨️</button>
+                        ` : '-'}
+                    </td>
+                </tr>`}).join('') || '<tr><td colspan="5">Nenhum lote na fila.</td></tr>';
+            
+            // Renderiza Tabela Ordem de Produção (Agrupada)
+            const ordemProducaoBody = document.querySelector('#table-ordem-producao tbody');
+            if(ordemProducaoBody) ordemProducaoBody.innerHTML = (fullData.ordemProducao || []).map(item => `
+                <tr>
+                    <td>${item.pecaLisa || '-'}</td>
+                    <td><strong>${item.quantidade || 0}</strong></td>
+                    <td>${item.estampa || '-'}</td>
+                </tr>`).join('') || '<tr><td colspan="3">Nenhum item pendente para produção.</td></tr>';
+
+            // Renderiza Tabela Estoque Pronto
+            const estoqueProntoBody = document.querySelector('#table-estoque-pronto tbody');
+            if(estoqueProntoBody) estoqueProntoBody.innerHTML = (fullData.estoquePronto || []).map(p => {
+                const produtoCompleto = p.nomeCompleto || '-'; // Usa o nomeCompleto pré-calculado
+                const statusClass = (p.status || 'disponivel').toLowerCase().replace(/[\s\(\).]/g, '-');
+                const precoFormatado = (p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                return `<tr>
+                            <td>${produtoCompleto}</td>
+                            <td><strong>${p.quantidade || 0}</strong></td>
+                            <td>${precoFormatado}</td>
+                            <td><span class="status-badge status-${statusClass}">${p.status || '-'}</span></td>
+                       </tr>`;
+            }).join('') || '<tr><td colspan="4">Nenhum produto em inventário.</td></tr>';
+            
+            // Renderiza Tabela Estoque Matéria-Prima
+            const estoqueMateriaBody = document.querySelector('#table-estoque-materia tbody');
+            if(estoqueMateriaBody) estoqueMateriaBody.innerHTML = (fullData.estoqueMateria || []).map(m => `
+                <tr>
+                    <td>${m.nomeCompleto || '-'}</td><td>${m.qtdDisponivel || 0}</td>
+                    <td>${m.qtdReservada || 0}</td><td>${m.qtdAtual || 0}</td>
+                </tr>`).join('') || '<tr><td colspan="4">Nenhuma matéria-prima em inventário.</td></tr>';
+            
+            // Renderiza Tabela Consignação (Simples) - Chama a função que aplica filtros
+            renderConsignacaoTable();
+
+            // Renderiza Tabela Fluxo de Caixa
+            const caixaBody = document.querySelector('#table-caixa tbody');
+            if(caixaBody) caixaBody.innerHTML = (fullData.fluxoCaixa || []).slice(0, 50).map(c => `
+                <tr style="color: ${c.tipo === 'Saída' ? 'var(--danger)' : 'var(--secondary)'}">
+                    <td>${c.data ? new Date(c.data).toLocaleDateString('pt-BR') : '-'}</td><td>${c.tipo || '-'}</td>
+                    <td>${c.descricao || '-'}</td><td>${(c.entrada || c.saida || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                </tr>`).join('') || '<tr><td colspan="4">Nenhum lançamento no caixa.</td></tr>';
+            
+            // Renderiza as tabelas das páginas de massa (inicialmente vazias)
+            renderTabelaProducaoMassa();
+            renderTabelaSaidaMassa();
+
+            // **INICIALIZA O CHOICES.JS AQUI**
+            initializeChoicesSaidaMassa();
+            initializeChoicesLancamento();
+
+            console.log("renderAll concluído.");
+        }
+
+        // --- Funções Auxiliares de Renderização (Selects, Tabelas Filtradas) ---
+        function populateSelect(selector, optionsArray, placeholder, addAllOption = false) {
+            const select = document.querySelector(selector);
+            if (!select) {
+                console.warn(`Select não encontrado: ${selector}`);
+                return; 
+            }
+            // Guarda valor selecionado antes de limpar
+            const currentValue = select.value;
+            select.innerHTML = ''; // Limpa opções existentes
+            
+            // Adiciona placeholder
+            const placeholderOpt = document.createElement('option');
+            placeholderOpt.value = '';
+            placeholderOpt.textContent = placeholder;
+            // Se for o select do Choices.js, o placeholder é configurado na inicialização
+            if (selector !== '#saida-massa-produto' && selector !== '#lancamento-produto') { 
+                select.appendChild(placeholderOpt);
+            }
+
+
+            // Adiciona opção "Todos" se solicitado
+            if (addAllOption) {
+                const allOpt = document.createElement('option');
+                allOpt.value = 'todos';
+                allOpt.textContent = placeholder; // Usa o mesmo texto do placeholder para "Todos"
+                select.appendChild(allOpt);
+            }
+
+            // Adiciona as opções do array
+            if(optionsArray && Array.isArray(optionsArray)) {
+                optionsArray.forEach(optValue => {
+                    if(optValue) { // Ignora valores vazios/nulos
+                        const option = document.createElement('option');
+                        option.value = optValue;
+                        option.textContent = optValue;
+                        select.appendChild(option);
+                    }
+                });
+            }
+            
+            // Tenta restaurar valor selecionado
+            if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                select.value = currentValue;
+            } else if (addAllOption) {
+                select.value = 'todos'; // Default para 'todos' se existia e o valor sumiu
+            } else if (selector !== '#saida-massa-produto' && selector !== '#lancamento-produto') { // MODIFICADO
+                select.value = ''; // Default para placeholder
+            }
+        }
+        
+        // Função para popular o filtro de revendedores na consignação (chamada por renderAll)
+        function populateConsignacaoFilter(revendedores) {
+           // A lógica agora está dentro de populateSelect com addAllOption = true
+        }
+        
+        // Renderiza a tabela de consignação aplicando os filtros
+        function renderConsignacaoTable() {
+            const tbody = document.querySelector('#table-consignacao tbody');
+            if (!tbody) return; // Sai se a tabela não existe
+            const filtroRevendedor = document.getElementById('filtro-revendedor').value;
+            const dataInicioStr = document.getElementById('filtro-data-inicio').value;
+            const dataFimStr = document.getElementById('filtro-data-fim').value;
+
+            let filteredData = fullData.estoqueConsignado || [];
+
+            if (filtroRevendedor && filtroRevendedor !== 'todos') {
+                filteredData = filteredData.filter(item => item.revendedor === filtroRevendedor);
+            }
+            if (dataInicioStr) {
+                try {
+                    const dataInicio = new Date(dataInicioStr + "T00:00:00Z"); // Use UTC para evitar timezone shifts
+                     if (!isNaN(dataInicio)) {
+                        filteredData = filteredData.filter(item => item.dataEnvio && new Date(item.dataEnvio) >= dataInicio);
+                    }
+                } catch(e){ console.error("Data início inválida:", dataInicioStr); }
+            }
+            if (dataFimStr) {
+                try {
+                    const dataFim = new Date(dataFimStr + "T23:59:59Z"); // Use UTC
+                     if (!isNaN(dataFim)) {
+                        filteredData = filteredData.filter(item => item.dataEnvio && new Date(item.dataEnvio) <= dataFim);
+                    }
+                } catch(e){ console.error("Data fim inválida:", dataFimStr); }
+            }
+            
+            if (!filteredData || filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhum item em consignação encontrado para este filtro.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(item => {
+                const statusClass = (item.status || '').toLowerCase().replace(/[\s\(\).]/g, '-');
+                const dataEnvioFormatada = item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR') : '-';
+                return `<tr>
+                    <td>${item.revendedor || '-'}</td>
+                    <td>${item.produto || '-'}</td>
+                    <td><strong>${item.qtdRestante || 0}</strong></td>
+                    <td>${item.qtdEnviada || 0}</td>
+                    <td>${item.qtdVendida || 0}</td>
+                    <td><span class="status-badge status-${statusClass}">${item.status || '-'}</span></td>
+                    <td>${dataEnvioFormatada}</td>
+                </tr>`
+            }).join('');
+        }
+
+        // --- FUNÇÃO PARA INICIALIZAR O CHOICES.JS ---
+        function initializeChoicesSaidaMassa() {
+            const selectElement = document.getElementById('saida-massa-produto');
+            if (!selectElement) {
+                console.error("Elemento select #saida-massa-produto não encontrado para Choices.js");
+                return;
+            }
+
+            // Destrói instância anterior se existir (importante para recarregar dados)
+            if (saidaMassaChoicesInstance) {
+                saidaMassaChoicesInstance.destroy();
+                saidaMassaChoicesInstance = null;
+                 // Limpa opções antigas que o destroy pode não limpar completamente
+                selectElement.innerHTML = ''; 
+            }
+
+            // Prepara as opções para o Choices.js no formato { value: '...', label: '...' }
+            const choicesOptions = [
+                { value: '', label: 'Selecione um produto...', placeholder: true, disabled: true, selected: true } // Placeholder
+            ];
+            if (fullData.produtos && Array.isArray(fullData.produtos)) {
+                fullData.produtos.forEach(produto => {
+                    if (produto) { // Garante que não adiciona opções vazias
+                        choicesOptions.push({ value: produto, label: produto });
+                    }
+                });
+            }
+
+            // Inicializa o Choices.js
+            try {
+                saidaMassaChoicesInstance = new Choices(selectElement, {
+                    choices: choicesOptions, // Passa as opções formatadas
+                    searchEnabled: true, // Habilita a pesquisa
+                    itemSelectText: 'Selecionar', // Texto do botão/link
+                    removeItemButton: false, // Não é um multi-select
+                    placeholder: true, // Usa o placeholder definido
+                    searchPlaceholderValue: 'Digite para pesquisar...', // Placeholder da busca
+                    allowHTML: false, // Segurança
+                    fuseOptions: {
+                        threshold: 0.3, // Quão "parecido" precisa ser (0 = exato, 1 = qualquer coisa)
+                    },
+                    // Ordena os resultados alfabeticamente
+                    sorter: (a, b) => a.label.localeCompare(b.label), 
+                });
+                console.log("Choices.js inicializado para #saida-massa-produto");
+            } catch (e) {
+                console.error("Erro ao inicializar Choices.js:", e);
+                // Se falhar, tenta usar o select normal como fallback (já populado antes)
+                 populateSelect('#saida-massa-produto', fullData.produtos, 'Selecione um produto do estoque');
+            }
+        }
+        
+        // --- NOVO: FUNÇÃO PARA INICIALIZAR O CHOICES.JS NA PÁGINA DE LANÇAMENTO ---
+        function initializeChoicesLancamento() {
+            const selectElement = document.getElementById('lancamento-produto');
+            if (!selectElement) {
+                console.error("Elemento select #lancamento-produto não encontrado para Choices.js");
+                return;
+            }
+
+            if (lancamentoChoicesInstance) {
+                lancamentoChoicesInstance.destroy();
+                lancamentoChoicesInstance = null;
+                selectElement.innerHTML = ''; 
+            }
+
+            const choicesOptions = [
+                { value: '', label: 'Selecione um produto...', placeholder: true, disabled: true, selected: true }
+            ];
+            if (fullData.produtos && Array.isArray(fullData.produtos)) {
+                fullData.produtos.forEach(produto => {
+                    if (produto) {
+                        choicesOptions.push({ value: produto, label: produto });
+                    }
+                });
+            }
+
+            try {
+                lancamentoChoicesInstance = new Choices(selectElement, {
+                    choices: choicesOptions,
+                    searchEnabled: true,
+                    itemSelectText: 'Selecionar',
+                    removeItemButton: false,
+                    placeholder: true,
+                    searchPlaceholderValue: 'Digite para pesquisar...',
+                    allowHTML: false,
+                    fuseOptions: { threshold: 0.3 },
+                    sorter: (a, b) => a.label.localeCompare(b.label), 
+                });
+                console.log("Choices.js inicializado para #lancamento-produto");
+            } catch (e) {
+                console.error("Erro ao inicializar Choices.js em Lançamento:", e);
+                populateSelect('#lancamento-produto', fullData.produtos, 'Selecione um produto');
+            }
+        }
+        
+
+        // --- SETUP DE TODOS OS FORMULÁRIOS ---
+        function setupForms() {
+            // Remove listeners antigos para evitar duplicação se initializeApp for chamado múltiplas vezes
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+            });
+            
+            // Adiciona novos listeners
+            const formVenda = document.getElementById('form-venda');
+            if (formVenda) formVenda.addEventListener('submit', handleFormVenda);
+            
+            const formLoteSimples = document.getElementById('form-lote');
+            if (formLoteSimples) formLoteSimples.addEventListener('submit', handleFormLoteSimples);
+            
+            const formProdMassa = document.getElementById('form-producao-massa');
+            if (formProdMassa) formProdMassa.addEventListener('submit', handleFormProdMassa);
+            
+            const formSaidaMassa = document.getElementById('form-saida-massa');
+            if(formSaidaMassa) formSaidaMassa.addEventListener('submit', handleFormSaidaMassa);
+
+            const formConsignacaoSimples = document.getElementById('form-enviar-consignacao');
+            if(formConsignacaoSimples) formConsignacaoSimples.addEventListener('submit', handleFormConsignacaoSimples);
+
+            // Listener do formulário de lançamento
+            const formLancamentoConsignacao = document.getElementById('form-lancamento-consignacao');
+            if(formLancamentoConsignacao) formLancamentoConsignacao.addEventListener('submit', handleFormLancamentoConsignacao);
+
+            const formCaixa = document.getElementById('form-caixa');
+            if(formCaixa) formCaixa.addEventListener('submit', handleFormCaixa);
+
+            const formMateriaPrima = document.getElementById('form-materia-prima');
+            if(formMateriaPrima) formMateriaPrima.addEventListener('submit', handleFormMateriaPrima);
+            
+            const formProdutoPronto = document.getElementById('form-produto-pronto');
+            if(formProdutoPronto) formProdutoPronto.addEventListener('submit', handleFormProdutoPronto);
+
+            const formAddRevendedor = document.getElementById('form-add-revendedor');
+            if(formAddRevendedor) formAddRevendedor.addEventListener('submit', handleFormAddRevendedor);
+        }
+
+        // --- HANDLERS DOS FORMULÁRIOS ---
+        function handleFormVenda(e) {
+            e.preventDefault();
+            const vendaInfo = {
+                produto: document.getElementById('venda-produto').value,
+                quantidade: parseInt(document.getElementById('venda-quantidade').value, 10),
+                vendedor: document.getElementById('venda-vendedor').value
+            };
+            if (!vendaInfo.produto || !vendaInfo.quantidade || !vendaInfo.vendedor) {
+                 showToast("Preencha todos os campos da venda.", 'warning'); return;
+            }
+            runBackendAction('registrarVendaPeloPainel', vendaInfo, e.target);
+        }
+
+        function handleFormLoteSimples(e) {
+            e.preventDefault();
+            const textarea = document.getElementById('lote-produtos-textarea');
+            const linhas = textarea.value.split('\n').filter(linha => linha.trim() !== '');
+            const itens = [];
+            const regex = /^(\d+)\s+(.+)/; 
+            let hasError = false;
+            for (const linha of linhas) {
+                const match = linha.trim().match(regex);
+                if (match) {
+                    itens.push({
+                        quantidade: parseInt(match[1], 10),
+                        produto: match[2].trim()
+                    });
+                } else {
+                    showToast(`A linha "${linha}" não está no formato correto (Ex: "5 Camiseta Preta M").`, 'error');
+                    hasError = true; break; 
+                }
+            }
+            if (hasError) return;
+            if (itens.length === 0) {
+                showToast("Adicione pelo menos um produto ao lote.", 'error'); return;
+            }
+            const loteInfo = {
+                descricao: document.getElementById('lote-descricao').value,
+                solicitante: document.getElementById('lote-solicitante').value,
+                itens: itens
+            };
+             if (!loteInfo.descricao || !loteInfo.solicitante) {
+                 showToast("Preencha a descrição e o solicitante do lote.", 'warning'); return;
+            }
+            // Chama a função de massa, pois a simples é um redirecionamento no backend
+            runBackendAction('criarLoteMassaPeloPainel', loteInfo, e.target); 
+        }
+
+        function handleFormProdMassa(e) {
+            e.preventDefault();
+            if (loteMassaItens.length === 0) {
+                showToast("Adicione pelo menos um item ao lote antes de o criar.", 'warning'); return;
+            }
+            const loteInfo = {
+                descricao: document.getElementById('massa-lote-descricao').value,
+                solicitante: document.getElementById('massa-lote-solicitante').value,
+                itens: loteMassaItens // Usa a lista global
+            };
+            if (!loteInfo.descricao || !loteInfo.solicitante) {
+                 showToast("Preencha a descrição e o solicitante do lote.", 'warning'); return;
+            }
+            // Adiciona callback para limpar a lista SÓ SE o backend confirmar sucesso
+            runBackendAction('criarLoteMassaPeloPainel', loteInfo, null, (response) => {
+                 if(response.success) {
+                    loteMassaItens = []; // Limpa a lista local
+                    renderTabelaProducaoMassa(); // Atualiza a tabela na UI
+                    document.getElementById('massa-lote-descricao').value = ''; // Limpa descrição
+                    document.getElementById('massa-lote-solicitante').value = ''; // Limpa solicitante
+                 }
+            });
+        }
+
+        function handleFormSaidaMassa(e) {
+            e.preventDefault();
+             if (saidaMassaItens.length === 0) {
+                showToast("Adicione pelo menos um produto ao pedido de saída.", 'warning'); return;
+            }
+            const saidaInfo = {
+                revendedor: document.getElementById('saida-massa-revendedor').value,
+                tipoSaida: document.getElementById('saida-massa-tipo').value,
+                observacao: document.getElementById('saida-massa-observacao').value, // Inclui observação
+                itens: saidaMassaItens // Usa a lista global
+            };
+            if (!saidaInfo.revendedor || !saidaInfo.tipoSaida) {
+                 showToast("Selecione o Revendedor/Destino e o Tipo de Saída.", 'warning'); return;
+            }
+            const totalItensConfirm = saidaMassaItens.reduce((sum, item) => sum + item.quantidade, 0);
+            const confirmMsg = `Confirma a saída de ${totalItensConfirm} item(ns) (${saidaMassaItens.length} tipo(s)) para "${saidaInfo.revendedor}" como "${saidaInfo.tipoSaida}"?`;
+
+            showConfirm('Confirmar Saída em Massa', confirmMsg, () => {
+                // Adiciona callback para limpar a lista SÓ SE o backend confirmar sucesso
+                runBackendAction('realizarSaidaMassaPeloPainel', saidaInfo, null, (response) => {
+                    if (response.success) {
+                        saidaMassaItens = []; // Limpa a lista local
+                        renderTabelaSaidaMassa(); // Atualiza a tabela na UI
+                        document.getElementById('saida-massa-revendedor').value = ''; // Limpa campos
+                        document.getElementById('saida-massa-tipo').value = '';
+                        document.getElementById('saida-massa-observacao').value = '';
+                        // Limpa também o Choices.js
+                        if (saidaMassaChoicesInstance) {
+                            saidaMassaChoicesInstance.clearInput();
+                            saidaMassaChoicesInstance.setChoiceByValue(''); // Reseta para placeholder
+                        }
+                    }
+                });
+            });
+        }
+
+        function handleFormConsignacaoSimples(e) {
+             e.preventDefault();
+            const textarea = document.getElementById('consignacao-produtos-textarea');
+            const linhas = textarea.value.split('\n').filter(linha => linha.trim() !== '');
+            const itens = [];
+            const regex = /^(\d+)\s+(.+)/; 
+            let hasError = false;
+            for (const linha of linhas) {
+                const match = linha.trim().match(regex);
+                if (match) {
+                    itens.push({
+                        quantidade: parseInt(match[1], 10),
+                        produto: match[2].trim()
+                    });
+                } else {
+                    showToast(`A linha "${linha}" não está no formato correto (Ex: "5 Camiseta Preta M").`, 'error');
+                    hasError = true; break;
+                }
+            }
+            if(hasError) return;
+            if (itens.length === 0) {
+                showToast("Adicione pelo menos um produto para enviar.", 'error'); return;
+            }
+            const consignacaoInfo = {
+                revendedor: document.getElementById('consignacao-revendedor').value,
+                tipoSaida: "Consignação", // Define o tipo para a função de massa
+                itens: itens
+            };
+            if (!consignacaoInfo.revendedor) {
+                 showToast("Selecione o Revendedor.", 'warning'); return;
+            }
+            // Chama a função de massa, pois a simples é um redirecionamento no backend
+            runBackendAction('realizarSaidaMassaPeloPainel', consignacaoInfo, e.target);
+        }
+
+        function handleFormCaixa(e) {
+            e.preventDefault();
+            const movimento = {
+                tipo: document.getElementById('caixa-tipo').value,
+                valor: parseFloat(document.getElementById('caixa-valor').value),
+                descricao: document.getElementById('caixa-descricao').value,
+                responsavel: document.getElementById('caixa-responsavel').value
+            };
+            if (!movimento.tipo || !movimento.valor || !movimento.descricao || !movimento.responsavel) {
+                 showToast("Preencha todos los campos del lanzamiento.", 'warning'); return;
+            }
+             if (isNaN(movimento.valor) || movimento.valor <= 0) {
+                 showToast("O valor deve ser um número positivo.", 'warning'); return;
+            }
+            runBackendAction('registrarMovimentoCaixaPeloPainel', movimento, e.target);
+        }
+
+        function handleFormMateriaPrima(e) {
+             e.preventDefault();
+            const materiaInfo = {
+                modelo: document.getElementById('materia-modelo').value.trim(),
+                genero: document.getElementById('materia-genero').value.trim(),
+                cor: document.getElementById('materia-cor').value.trim(),
+                corManga: document.getElementById('materia-cor-manga').value.trim(),
+                tamanho: document.getElementById('materia-tamanho').value.trim(),
+                quantidade: parseInt(document.getElementById('materia-quantidade').value, 10)
+            };
+             if (!materiaInfo.modelo || !materiaInfo.cor || !materiaInfo.tamanho || isNaN(materiaInfo.quantidade) || materiaInfo.quantidade < 0) {
+                 showToast("Modelo, Cor, Tamanho e Quantidade (>=0) são obrigatórios.", 'warning'); return;
+            }
+            runBackendAction('adicionarMateriaPrimaPeloPainel', materiaInfo, e.target);
+        }
+
+        function handleFormProdutoPronto(e) {
+            e.preventDefault();
+            const produtoInfo = {
+                modelo: document.getElementById('produto-modelo').value.trim(),
+                genero: document.getElementById('produto-genero').value.trim(),
+                cor: document.getElementById('produto-cor').value.trim(),
+                corManga: document.getElementById('produto-cor-manga').value.trim(),
+                tamanho: document.getElementById('produto-tamanho').value.trim(),
+                estampa: document.getElementById('produto-estampa').value.trim(),
+                quantidade: parseInt(document.getElementById('produto-quantidade').value, 10),
+                preco: parseFloat(document.getElementById('produto-preco').value)
+            };
+             if (!produtoInfo.modelo || !produtoInfo.cor || !produtoInfo.tamanho || !produtoInfo.estampa || isNaN(produtoInfo.quantidade) || produtoInfo.quantidade < 0 || isNaN(produtoInfo.preco) || produtoInfo.preco <= 0) {
+                 showToast("Modelo, Cor, Tamanho, Estampa, Quantidade (>=0) e Preço (>0) são obrigatórios.", 'warning'); return;
+            }
+            runBackendAction('adicionarProdutoProntoPeloPainel', produtoInfo, e.target);
+        }
+
+         function handleFormAddRevendedor(e) {
+            e.preventDefault();
+            const nomeRevendedor = document.getElementById('revendedor-nome').value;
+             if (!nomeRevendedor || !nomeRevendedor.trim()) {
+                 showToast("O nome do vendedor não pode estar vazio.", 'warning'); return;
+            }
+            runBackendAction('adicionarRevendedorPeloPainel', nomeRevendedor.trim(), e.target);
+        }
+        
+        // Handler do formulário de lançamento
+        function handleFormLancamentoConsignacao(e) {
+            e.preventDefault();
+            const lancamentoInfo = {
+                tipo: document.getElementById('lancamento-tipo').value,
+                revendedor: document.getElementById('lancamento-revendedor').value,
+                produto: lancamentoChoicesInstance.getValue(true), // MODIFICADO
+                quantidade: parseInt(document.getElementById('lancamento-quantidade').value, 10)
+            };
+            
+            if (!lancamentoInfo.tipo || !lancamentoInfo.revendedor || !lancamentoInfo.produto || isNaN(lancamentoInfo.quantidade) || lancamentoInfo.quantidade <= 0) {
+                 showToast("Preencha todos os campos (Tipo, Revendedor, Produto, Qtd > 0).", 'warning'); return;
+            }
+            
+            const actionMsg = lancamentoInfo.tipo === 'Venda Consignada' ? 'venda' : 'retorno';
+            const msg = `Confirma o lançamento de ${lancamentoInfo.quantidade} un. de "${lancamentoInfo.produto}" como ${actionMsg} para o revendedor "${lancamentoInfo.revendedor}"?`;
+            
+            showConfirm('Confirmar Lançamento', msg, () => {
+                // Não reseta o formulário todo, só a quantidade, para facilitar lançamentos múltiplos
+                runBackendAction('registrarLancamentoConsignado', lancamentoInfo, null, (response) => {
+                    if (response.success) {
+                        // Limpa apenas a quantidade, mantendo o revendedor e o tipo selecionados
+                        document.getElementById('lancamento-quantidade').value = 1; 
+                        
+                        // Limpa e foca no produto para o próximo lançamento
+                        if (lancamentoChoicesInstance) { // MODIFICADO
+                            lancamentoChoicesInstance.setChoiceByValue('');
+                            try { lancamentoChoicesInstance.input.element.focus(); } catch(e){}
+                        }
+                    }
+                });
+            });
+        }
+
+        // --- FUNÇÕES DE AÇÃO DO BACKEND (Genérica) ---
+        function runBackendAction(functionName, payload, formElement = null, successCallback = null) {
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(res => {
+                    // Trata resposta que pode ser string ou objeto {success, message}
+                    let message = 'Operação concluída.';
+                    let success = false;
+                    if (typeof res === 'object' && res !== null) {
+                        message = res.message || (res.success ? 'Sucesso!' : 'Erro desconhecido.');
+                        success = res.success;
+                    } else if (typeof res === 'string') {
+                        // Assume sucesso se for string (legado?)
+                        message = res;
+                        success = true; 
+                    } else {
+                         message = 'Resposta inesperada do servidor.';
+                         success = false;
+                    }
+
+                    showToast(message, success ? 'success' : 'error');
+                    
+                    if (success) {
+                        if (formElement) {
+                            try { formElement.reset(); } catch(e){ console.warn("Erro ao resetar form:", e); }
+                        }
+                        if (successCallback) {
+                             try { successCallback(res); } catch(e){ console.error("Erro no callback de sucesso:", e); }
+                        }
+                        // Recarrega os dados SEMPRE em caso de sucesso para refletir mudanças
+                        loadInitialData(); 
+                    } else {
+                        // Se falhou, apenas esconde o loader
+                        showLoader(false);
+                    }
+                })
+                .withFailureHandler(error => {
+                     // Usa a função onError global para tratamento padronizado
+                     onError(error); 
+                })
+                [functionName](payload);
+        }
+
+        // --- FUNÇÕES DE GESTÃO DE LOTE (Concluir, Cancelar, Imprimir) ---
+        function concluirLote(loteId) {
+            const message = `Tem a certeza de que deseja concluir o lote ${loteId}? Esta ação atualizará o inventário.`;
+            showConfirm('Confirmar Conclusão de Lote', message, () => {
+                runBackendAction('concluirLotePeloPainel', loteId);
+            });
+        }
+        
+        function cancelarLote(loteId) {
+            const message = `Tem a certeza de que deseja CANCELAR o lote ${loteId}? A matéria-prima reservada será devolvida ao estoque. Esta ação não pode ser desfeita.`;
+            showConfirm('Confirmar Cancelamento', message, () => {
+                runBackendAction('cancelarLotePeloPainel', loteId);
+            });
+        }
+
+        function imprimirLotes(loteId = null) {
+            let lotesParaImprimir = (fullData.lotes || []).filter(l => l.status === 'Aguardando Produção');
+            if (loteId) {
+                lotesParaImprimir = lotesParaImprimir.filter(l => l.id === loteId);
+            }
+            if (lotesParaImprimir.length === 0) {
+                showToast("Nenhum lote pendente para imprimir.", 'info'); return;
+            }
+            try {
+                const printWindow = window.open('', '_blank');
+                if(!printWindow) { showToast("Não foi possível abrir a janela de impressão. Verifique bloqueadores de pop-up.", "error"); return; }
+                printWindow.document.write('<html><head><title>Ordem de Produção</title>');
+                printWindow.document.write('<style>body{font-family: Arial, sans-serif; margin: 20px;} table{width: 100%; border-collapse: collapse; margin-bottom: 20px;} th, td{border: 1px solid #ccc; padding: 8px; text-align: left;} th{background-color: #f2f2f2;} h2{border-bottom: 2px solid #333; padding-bottom: 5px; margin-top: 30px;} .page-break{page-break-after: always;} @media print { .no-print { display: none; } } </style>');
+                printWindow.document.write('</head><body>');
+                lotesParaImprimir.forEach((lote, index) => {
+                    printWindow.document.write(`
+                        <h2>Ordem de Produção: ${lote.descricao || 'Sem Descrição'}</h2>
+                        <p><strong>ID do Lote:</strong> ${lote.id || '-'}</p>
+                        <p><strong>Data do Pedido:</strong> ${lote.dataPedido ? new Date(lote.dataPedido).toLocaleDateString('pt-BR') : '-'}</p>
+                        <p><strong>Solicitante:</strong> ${lote.solicitante || '-'}</p>
+                        <h3>Itens a Produzir</h3>
+                        <table>
+                            <thead><tr><th>Produto</th><th>Quantidade</th></tr></thead>
+                            <tbody>
+                                ${(lote.itens || []).map(item => `<tr><td>${item.produto || '-'}</td><td><strong>${item.quantidade || 0}</strong></td></tr>`).join('') || '<tr><td colspan="2">Nenhum item neste lote.</td></tr>'}
+                            </tbody>
+                        </table>
+                    `);
+                    if (index < lotesParaImprimir.length - 1) {
+                        printWindow.document.write('<div class="page-break"></div>');
+                    }
+                });
+                printWindow.document.write('<button class="no-print" onclick="window.print()">Imprimir</button>'); // Botão para re-imprimir
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.focus();
+            } catch (e) {
+                console.error("Erro ao gerar impressão:", e);
+                showToast("Erro ao gerar janela de impressão.", "error");
+            }
+        }
+
+        // --- FUNÇÕES DE RELATÓRIO E ACERTO DE CONSIGNAÇÃO ---
+        function imprimirRelatorioConsignacao() {
+            // Reusa a lógica de filtragem da renderização da tabela
+            const revendedor = document.getElementById('filtro-revendedor').value;
+            const dataInicioStr = document.getElementById('filtro-data-inicio').value;
+            const dataFimStr = document.getElementById('filtro-data-fim').value;
+            let dadosFiltrados = fullData.estoqueConsignado || [];
+            if (revendedor && revendedor !== 'todos') {
+                dadosFiltrados = dadosFiltrados.filter(item => item.revendedor === revendedor);
+            }
+            if (dataInicioStr) {
+                 try { const dataInicio = new Date(dataInicioStr + "T00:00:00Z"); if(!isNaN(dataInicio)) dadosFiltrados = dadosFiltrados.filter(item => item.dataEnvio && new Date(item.dataEnvio) >= dataInicio); } catch(e){}
+            }
+            if (dataFimStr) {
+                try { const dataFim = new Date(dataFimStr + "T23:59:59Z"); if(!isNaN(dataFim)) dadosFiltrados = dadosFiltrados.filter(item => item.dataEnvio && new Date(item.dataEnvio) <= dataFim); } catch(e){}
+            }
+            
+            if (dadosFiltrados.length === 0) {
+                showToast("Nenhum dado encontrado para os filtros selecionados.", 'info'); return;
+            }
+            const totalEnviado = dadosFiltrados.reduce((sum, item) => sum + item.qtdEnviada, 0);
+            const totalVendido = dadosFiltrados.reduce((sum, item) => sum + item.qtdVendida, 0);
+            const totalRestante = dadosFiltrados.reduce((sum, item) => sum + item.qtdRestante, 0);
+            try {
+                const printWindow = window.open('', '_blank');
+                 if(!printWindow) { showToast("Não foi possível abrir a janela de impressão. Verifique bloqueadores de pop-up.", "error"); return; }
+                printWindow.document.write('<html><head><title>Relatório de Consignação</title>');
+                printWindow.document.write('<style>body{font-family: Arial, sans-serif; margin: 20px;} table{width: 100%; border-collapse: collapse; margin-bottom: 20px;} th, td{border: 1px solid #ccc; padding: 8px; text-align: left;} th{background-color: #f2f2f2;} h2{border-bottom: 2px solid #333; padding-bottom: 5px;} .summary{margin-top: 20px; padding: 15px; border: 1px solid #eee; background: #f9f9f9;} @media print { .no-print { display: none; } } </style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(`<h2>Relatório de Consignação</h2>`);
+                printWindow.document.write(`<p><strong>Revendedor:</strong> ${revendedor === 'todos' ? 'Todos' : revendedor}</p>`);
+                const dataInicioFmt = dataInicioStr ? new Date(dataInicioStr+"T00:00:00Z").toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Início';
+                const dataFimFmt = dataFimStr ? new Date(dataFimStr+"T00:00:00Z").toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Fim';
+                printWindow.document.write(`<p><strong>Período de:</strong> ${dataInicioFmt} <strong>até:</strong> ${dataFimFmt}</p>`);
+                printWindow.document.write(`
+                    <table>
+                        <thead><tr><th>Data Envio</th><th>Revendedor</th><th>Produto</th><th>Enviado</th><th>Vendido</th><th>Restante</th></tr></thead>
+                        <tbody>
+                            ${dadosFiltrados.map(item => `
+                                <tr>
+                                    <td>${item.dataEnvio ? new Date(item.dataEnvio).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '-'}</td>
+                                    <td>${item.revendedor || '-'}</td>
+                                    <td>${item.produto || '-'}</td>
+                                    <td>${item.qtdEnviada || 0}</td>
+                                    <td>${item.qtdVendida || 0}</td>
+                                    <td><strong>${item.qtdRestante || 0}</strong></td>
+                                </tr>
+                             `).join('')}
+                        </tbody>
+                    </table>
+                `);
+                printWindow.document.write(`
+                    <div class="summary">
+                        <h3>Resumo do Período</h3>
+                        <p><strong>Total de Peças Enviadas:</strong> ${totalEnviado}</p>
+                        <p><strong>Total de Peças Vendidas:</strong> ${totalVendido}</p>
+                        <p><strong>Total de Peças Restantes:</strong> ${totalRestante}</p>
+                    </div>
+                `);
+                printWindow.document.write('<button class="no-print" onclick="window.print()">Imprimir</button>');
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.focus();
+            } catch (e) {
+                 console.error("Erro ao gerar impressão:", e);
+                showToast("Erro ao gerar janela de impressão.", "error");
+            }
+        }
+        
+        function buscarLancamentosAcerto() {
+            const revendedor = document.getElementById('acerto-revendedor').value;
+            const dataFim = document.getElementById('acerto-data-fim').value;
+            if (!revendedor) { showToast("Por favor, selecione um revendedor.", 'warning'); return; }
+            if (!dataFim) { showToast("Por favor, selecione a data final para o acerto.", 'warning'); return; }
+            const payload = { revendedor, dataFim };
+            showLoader(true);
+            google.script.run
+                .withSuccessHandler(onAcertoDataLoaded)
+                .withFailureHandler(onError)
+                .getAcertoData(payload); // Chama a função do backend
+        }
+
+        function onAcertoDataLoaded(data) {
+            showLoader(false);
+            const container = document.getElementById('acerto-resumo-container');
+            if (!container) return; // Sai se o container não existe
+
+            if(data.error) {
+                showToast(data.error, 'error'); 
+                container.style.display = 'none'; // Esconde o resumo se houver erro
+                return;
+            }
+            
+            if (data.totalPecasVendidas === 0) {
+                showToast(`Nenhuma venda pendente de acerto para ${data.revendedor} encontrada até a data selecionada.`, 'info');
+                container.style.display = 'none';
+                return;
+            }
+
+            // Preenche os campos do resumo
+            document.getElementById('acerto-total-vendido').textContent = (data.valorTotalVendido || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('acerto-comissao').textContent = (data.valorComissao || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('acerto-valor-receber').textContent = (data.valorAReceber || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('acerto-pecas-vendidas').textContent = data.totalPecasVendidas || 0;
+            
+            // Preenche a tabela de detalhes
+            const tbody = document.querySelector('#table-acerto-detalhes tbody');
+            if (tbody) {
+                tbody.innerHTML = (data.itens || []).map(item => `
+                    <tr>
+                        <td>${item.produto || '-'}</td>
+                        <td>${item.qtdVendida || 0}</td>
+                        <td>${(item.valorTotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="3">Nenhum item pendente.</td></tr>';
+            }
+            container.style.display = 'block'; // Mostra o resumo
+        }
+
+        function realizarAcertoConsignacao() {
+            const revendedor = document.getElementById('acerto-revendedor').value;
+            const dataFim = document.getElementById('acerto-data-fim').value;
+             if (!revendedor || !dataFim) {
+                 showToast("Selecione o Revendedor e a Data.", 'warning'); return;
+            }
+            const dataFimFormatada = new Date(dataFim+'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Usa UTC
+            const message = `Tem a certeza de que deseja realizar o acerto para ${revendedor} para vendas até ${dataFimFormatada}? Esta ação irá gerar lançamentos no fluxo de caixa e marcar os itens como "Acertado".`;
+            
+            showConfirm('Confirmar Acerto', message, () => {
+                const acertoInfo = { revendedor, dataFim };
+                // Callback para esconder o resumo após sucesso
+                runBackendAction('realizarAcertoPeloPainel', acertoInfo, null, (response) => {
+                    if (response.success) {
+                        const container = document.getElementById('acerto-resumo-container');
+                        if (container) container.style.display = 'none'; // Esconde o resumo
+                    }
+                });
+            });
+        }
+        
+        // --- FUNÇÕES DE PRODUÇÃO E SAÍDA EM MASSA (UI) ---
+        function adicionarItemLoteMassa() {
+            const modelo = document.getElementById('massa-produto-modelo').value;
+            const cor = document.getElementById('massa-produto-cor').value;
+            const tamanho = document.getElementById('massa-produto-tamanho').value;
+            const estampa = document.getElementById('massa-produto-estampa').value.trim();
+            const quantidade = parseInt(document.getElementById('massa-produto-quantidade').value, 10);
+            
+            if (!modelo || !cor || !tamanho || !estampa || isNaN(quantidade) || quantidade <= 0) {
+                showToast("Preencha todos os campos do item (modelo, cor, tamanho, estampa, qtd > 0).", 'warning'); return;
+            }
+            
+            // Constrói o nome completo do produto final (ajuste se precisar de gênero/cor manga)
+            const produtoFinal = [modelo, cor, tamanho, estampa].filter(Boolean).join(' '); 
+            
+            // Verifica se já existe para somar quantidade
+            const itemExistente = loteMassaItens.find(item => item.produto === produtoFinal);
+            if(itemExistente) {
+                itemExistente.quantidade += quantidade;
+            } else {
+                 loteMassaItens.push({ produto: produtoFinal, quantidade: quantidade });
+            }
+            
+            renderTabelaProducaoMassa();
+            
+            // Limpa campos para o próximo item
+            document.getElementById('massa-produto-estampa').value = '';
+            document.getElementById('massa-produto-quantidade').value = 1;
+            document.getElementById('massa-produto-modelo').focus(); // Foca no primeiro campo
+        }
+
+        function renderTabelaProducaoMassa() {
+            const tbody = document.querySelector('#table-producao-massa-itens tbody');
+            const placeholder = document.getElementById('producao-massa-sem-itens');
+            const totalSpan = document.getElementById('producao-massa-total-itens');
+            let totalItens = 0;
+            
+            if (loteMassaItens.length === 0) {
+                 if(placeholder) placeholder.style.display = '';
+                 tbody.innerHTML = ''; // Limpa explicitamente
+            } else {
+                 if(placeholder) placeholder.style.display = 'none';
+                 tbody.innerHTML = loteMassaItens.map((item, index) => {
+                    totalItens += item.quantidade;
+                    return `
+                        <tr>
+                            <td>${item.produto}</td>
+                            <td style="text-align: right;">${item.quantidade}</td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn btn-danger btn-sm" onclick="removerItemLoteMassa(${index})">X</button>
+                            </td>
+                        </tr>
+                    `}).join('');
+            }
+             if (totalSpan) totalSpan.textContent = totalItens;
+        }
+        
+        function removerItemLoteMassa(index) {
+            loteMassaItens.splice(index, 1);
+            renderTabelaProducaoMassa();
+        }
+        
+        function adicionarItemSaidaMassa() {
+            // Usa a instância do Choices.js para pegar o valor
+            if (!saidaMassaChoicesInstance) {
+                 showToast("Erro: O componente de seleção de produto não foi inicializado.", "error"); return;
+            }
+            const produtoNome = saidaMassaChoicesInstance.getValue(true); // Pega o valor selecionado
+            const quantidadeInput = document.getElementById('saida-massa-quantidade');
+            const quantidade = parseInt(quantidadeInput.value, 10);
+
+            if (!produtoNome) { showToast("Selecione um produto.", 'warning'); return; }
+            if (isNaN(quantidade) || quantidade <= 0) { showToast("Quantidade inválida.", 'warning'); return; }
+
+            const itemExistente = saidaMassaItens.find(item => item.produto === produtoNome);
+            if (itemExistente) {
+                itemExistente.quantidade += quantidade;
+            } else {
+                saidaMassaItens.push({ produto: produtoNome, quantidade: quantidade });
+            }
+
+            renderTabelaSaidaMassa();
+
+            // Limpa os campos após adicionar
+            saidaMassaChoicesInstance.clearInput(); // Limpa texto digitado
+            saidaMassaChoicesInstance.setChoiceByValue(''); // Reseta para o placeholder
+            quantidadeInput.value = 1;
+            
+            // Foca no Choices.js para próxima adição
+             try { 
+                 const choicesInput = saidaMassaChoicesInstance.input.element;
+                 if(choicesInput) choicesInput.focus();
+             } catch(e) { console.warn("Não foi possível focar no input do Choices.js"); }
+        }
+        
+        function renderTabelaSaidaMassa() {
+            const tbody = document.querySelector('#table-saida-massa-itens tbody');
+            const placeholder = document.getElementById('saida-massa-sem-itens');
+            const totalSpan = document.getElementById('saida-massa-total-itens');
+            let totalItens = 0;
+            
+            if (saidaMassaItens.length === 0) {
+                 if(placeholder) placeholder.style.display = '';
+                 tbody.innerHTML = ''; 
+            } else {
+                 if(placeholder) placeholder.style.display = 'none';
+                 tbody.innerHTML = saidaMassaItens.map((item, index) => {
+                    totalItens += item.quantidade;
+                    return `
+                        <tr>
+                            <td>${item.produto}</td>
+                            <td style="text-align: right;">${item.quantidade}</td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn btn-danger btn-sm" onclick="removerItemSaidaMassa(${index})">X</button>
+                            </td>
+                        </tr>
+                    `}).join('');
+            }
+            if (totalSpan) totalSpan.textContent = totalItens;
+        }
+        
+        function removerItemSaidaMassa(index) {
+            saidaMassaItens.splice(index, 1);
+            renderTabelaSaidaMassa();
+        }
+
+
+        // --- Funções de Gráficos ---
+        function drawAllCharts() {
+            if (!fullData || !fullData.charts || !google.visualization) return; // Verifica se google.visualization está carregado
+            console.log("Desenhando gráficos...");
+            try {
+                drawSales30DaysChart(fullData.charts.salesLast30Days);
+                drawTopProductsChart(fullData.charts.topProducts);
+                drawSalesBySellerChart(fullData.charts.salesBySeller);
+                 console.log("Gráficos desenhados.");
+            } catch (e) {
+                 console.error("Erro ao desenhar gráficos:", e);
+                 showToast("Erro ao exibir gráficos.", "error");
+            }
+        }
+
+        function drawSales30DaysChart(data) {
+            const container = document.getElementById('sales-30-days-chart');
+            if (!container || !data || data.length === 0 || (data.length === 1 && data[0][0] === 'Nenhum')) { container.innerHTML = '<p style="text-align:center; padding: 20px;">Sem dados de vendas nos últimos 30 dias.</p>'; return; }
+            try {
+                const dataTable = google.visualization.arrayToDataTable([['Dia', 'Faturação'], ...data]);
+                const options = { title: 'Faturação nos Últimos 30 Dias', legend: { position: 'none' }, vAxis: { format: 'R$ #,##0.00' }, colors: ['#4a69bd'], chartArea: { width: '85%', height: '70%' }, hAxis: { slantedText: true, slantedTextAngle: 30 } };
+                const chart = new google.visualization.LineChart(container);
+                chart.draw(dataTable, options);
+            } catch(e) { console.error("Erro drawSales30DaysChart:", e); container.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar gráfico de vendas.</p>'; }
+        }
+
+        function drawTopProductsChart(data) {
+             const container = document.getElementById('top-products-chart');
+             if (!container || !data || data.length === 0 || (data.length === 1 && data[0][0] === 'Nenhum')) { container.innerHTML = '<p style="text-align:center; padding: 20px;">Sem dados de top produtos este mês.</p>'; return; }
+             try {
+                const dataTable = google.visualization.arrayToDataTable([['Produto', 'Quantidade Vendida'], ...data]);
+                const options = { title: 'Top 5 Produtos Vendidos (Mês)', legend: { position: 'right', alignment: 'center' }, pieHole: 0.4, chartArea: { width: '90%', height: '80%' } };
+                const chart = new google.visualization.PieChart(container);
+                chart.draw(dataTable, options);
+             } catch(e) { console.error("Erro drawTopProductsChart:", e); container.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar gráfico de produtos.</p>'; }
+        }
+
+        function drawSalesBySellerChart(data) {
+            const container = document.getElementById('sales-by-seller-chart');
+            if (!container || !data || data.length === 0 || (data.length === 1 && data[0][0] === 'Nenhum')) { container.innerHTML = '<p style="text-align:center; padding: 20px;">Sem dados de vendas por vendedor este mês.</p>'; return; }
+            try {
+                const dataTable = google.visualization.arrayToDataTable([['Vendedor', 'Faturação'], ...data]);
+                const options = { title: 'Faturação por Vendedor (Mês)', legend: { position: 'none' }, hAxis: { title: 'Faturação', format: 'R$ #,##0.00' }, colors: ['#1dd1a1'], chartArea: { width: '70%', height: '75%' } };
+                const chart = new google.visualization.BarChart(container);
+                chart.draw(dataTable, options);
+             } catch(e) { console.error("Erro drawSalesBySellerChart:", e); container.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar gráfico de vendedores.</p>'; }
+        }
+
+        // --- FUNÇÕES DE FILTRO DE TABELA (Inventário) ---
+         function setupTableFilters() {
+            const filterInputPronto = document.getElementById('filtro-estoque-pronto');
+            const tableBodyPronto = document.querySelector('#table-estoque-pronto tbody');
+            if (filterInputPronto && tableBodyPronto) {
+                 filterInputPronto.addEventListener('input', () => filterTableRows(filterInputPronto, tableBodyPronto));
+            }
+
+            const filterInputMateria = document.getElementById('filtro-estoque-materia');
+            const tableBodyMateria = document.querySelector('#table-estoque-materia tbody');
+             if (filterInputMateria && tableBodyMateria) {
+                 filterInputMateria.addEventListener('input', () => filterTableRows(filterInputMateria, tableBodyMateria));
+            }
+        }
+
+        function filterTableRows(inputElement, tableBody) {
+            const searchTerm = inputElement.value.toLowerCase();
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                // Verifica se o texto da linha inclui o termo de pesquisa
+                // Ignora linhas de placeholder
+                if (row.id && (row.id.includes('-sem-itens') || row.id.includes('-placeholder'))) return; 
+                
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(searchTerm)) {
+                    row.style.display = ''; // Mostra a linha
+                } else {
+                    row.style.display = 'none'; // Esconde a linha
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
